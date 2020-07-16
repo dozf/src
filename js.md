@@ -17,6 +17,75 @@ Math.random()*(n-m)+m
 // 停止callback function的执行并且立即return回来
 ```
 
+- 复制文本到剪切板
+```javascript
+function copyToClipboard(data) {
+    const _tempInput = document.createElement('input')
+    _tempInput.value = data.value
+    document.body.appendChild(_tempInput)
+    _tempInput.select()
+    document.execCommand('Copy')
+    document.body.removeChild(_tempInput)
+}
+```
+
+- 前端生成文件并下载
+```javascript
+function createAndDownloadFile(fileName, content) {
+    const aTag = document.createElement('a');
+    const blob = new Blob([content]);
+    aTag.download = `${fileName}.json`;
+    aTag.href = URL.createObjectURL(blob);
+    aTag.click();
+    URL.revokeObjectURL(blob);
+}
+```
+
+- 高亮文本
+```javascript
+function highlight(text, words, tag='span') {
+    let i, len = words.length, re;
+    for (i = 0; i < len; i++) {
+	re = new RegExp(words[i], 'g');
+	if (re.test(text)) {
+	    text = text.replace(re, '<'+ tag +' class="highlight">$&</'+ tag +'>');
+	}
+    }
+    return text;
+}
+
+```
+
+- 限制文本字数
+```javascript
+function excerpt(str, nwords) {
+    let words = str.split(' ');
+    words.splice(nwords, words.length-1);
+    return words.join(' ') +
+	(words.length !== str.split(' ').length ? '…' : '');
+}
+```
+
+- 简单创建动态菜单下拉列表
+```javascript
+function createMenu(items, tags=['ul', 'li']) {
+    const parent = tags[0];
+    const child = tags[1];
+    let item, value = '';
+    for (let i = 0, l = items.length; i < l; i++) {
+	item = items[i];
+	if (/:/.test(item)) {
+	    item = items[i].split(':')[0];
+	    value = items[i].split(':')[1];
+	}
+	items[i] = '<'+ child +' '+
+	    (value && 'value="'+value+'"') +'>'+ 
+	    item +'</'+ child +'>';
+    }
+    return '<'+ parent +'>'+ items.join('') +'</'+ parent +'>';
+}
+```
+
 - 防止被Iframe嵌套
 ```javascript
 if(top != self){
@@ -173,6 +242,117 @@ alert('是否是iOS：'+isiOS);
 function isWechat() {  
     var ua = navigator.userAgent.toLowerCase();
     return /micromessenger/i.test(ua) || /windows phone/i.test(ua);
+}
+```
+- 获取单个dom元素
+```js
+function $(selector, el) {
+  if (!el) {
+    el = document;
+  }
+  return el.querySelector(selector);
+}
+```
+- 获取多个dom元素
+```js
+function $$(selector, el) {
+  if (!el) {
+    el = document;
+  }
+  return el.querySelectorAll(selector);
+  // Note: the returned object is a NodeList.
+  // If you'd like to convert it to a Array for convenience, use this instead:
+  // return Array.prototype.slice.call(el.querySelectorAll(selector));
+}
+```
+- 将nodeList集合转换为数组
+```js
+function convertToArray(nodeList) {
+  var array = null
+  try {
+    // IE8-NodeList是COM对象
+    array = Array.prototype.slice.call(nodeList, 0)
+  } catch (err) {
+    array = []
+    for (var i = 0, len = nodeList.length; i < len; i++) {
+      array.push(nodeList[i])
+    }
+  }
+  return array
+}
+```
+- ajax函数
+```js
+function ajax(setting) {
+  //设置参数的初始值
+  var opts = {
+    method: (setting.method || "GET").toUpperCase(), //请求方式
+    url: setting.url || "", // 请求地址
+    async: setting.async || true, // 是否异步
+    dataType: setting.dataType || "json", // 解析方式
+    data: setting.data || "", // 参数
+    success: setting.success || function () { }, // 请求成功回调
+    error: setting.error || function () { } // 请求失败回调
+  };
+
+  // 参数格式化
+  function params_format(obj) {
+    var str = "";
+    for (var i in obj) {
+      str += i + "=" + obj[i] + "&";
+    }
+    return str
+      .split("")
+      .slice(0, -1)
+      .join("");
+  }
+
+  // 创建ajax对象
+  var xhr = new XMLHttpRequest();
+
+  // 连接服务器open(方法GET/POST，请求地址， 异步传输)
+  if (opts.method == "GET") {
+    xhr.open(
+      opts.method,
+      opts.url + "?" + params_format(opts.data),
+      opts.async
+    );
+    xhr.send();
+  } else {
+    xhr.open(opts.method, opts.url, opts.async);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.send(opts.data);
+  }
+
+  /*
+  ** 每当readyState改变时，就会触发onreadystatechange事件
+  ** readyState属性存储有XMLHttpRequest的状态信息
+  ** 0 ：请求未初始化
+  ** 1 ：服务器连接已建立
+  ** 2 ：请求已接受
+  ** 3 : 请求处理中
+  ** 4 ：请求已完成，且相应就绪
+  */
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
+      switch (opts.dataType) {
+        case "json":
+          var json = JSON.parse(xhr.responseText);
+          opts.success(json);
+          break;
+        case "xml":
+          opts.success(xhr.responseXML);
+          break;
+        default:
+          opts.success(xhr.responseText);
+          break;
+      }
+    }
+  };
+
+  xhr.onerror = function (err) {
+    opts.error(err);
+  };
 }
 ```
 
@@ -379,6 +559,20 @@ function getJsDir (src) {
     return script ? script.src.substr(0, script.src.lastIndexOf('/')) : script;
 }
 ```
+- 页面加载自执行函数
+```js
+function addload(func) {
+  var old = window.onload;
+  if (typeof window.onload != "function") {
+    window.onload = func;
+  } else {
+    window.onload = function () {
+      old();
+      func();
+    }
+  }
+}
+```
 
 - 从全局捕获错误
 ```js
@@ -478,7 +672,7 @@ Date.prototype.Format = function(formatStr) {
     var str = formatStr;
     var Week = ['日', '一', '二', '三', '四', '五', '六'];
     str = str.replace(/yyyy|YYYY/, this.getFullYear());
-    str = str.replace(/yy|YY/, (this.getYear() % 100) > 9 ? (this.getYear() % 100).toString() : '0' + (this.getYear() % 100));
+    str = str.replace(/yy|YY/, this.getFullYear().toString().substr(2));
     str = str.replace(/MM/, (this.getMonth() + 1) > 9 ? (this.getMonth() + 1).toString() : '0' + (this.getMonth() + 1));
     str = str.replace(/M/g, (this.getMonth() + 1));
     str = str.replace(/w|W/g, Week[this.getDay()]);
@@ -493,6 +687,33 @@ Date.prototype.Format = function(formatStr) {
     return str
 }
 ```
+
+- 判断日期是否有效
+```javascript
+function isValidDate(value, userFormat='mm/dd/yyyy') {
+    const delimiter = /[^mdy]/.exec(userFormat)[0];
+    const theFormat = userFormat.split(delimiter);
+    const theDate = value.split(delimiter);
+    function isDate(date, format) {
+	let m, d, y, i = 0, len = format.length, f;
+	for (i; i < len; i++) {
+	    f = format[i];
+	    if (/m/.test(f)) m = date[i];
+	    if (/d/.test(f)) d = date[i];
+	    if (/y/.test(f)) y = date[i];
+	}
+	return (
+	    m > 0 && m < 13 &&
+	    y && y.length === 4 &&
+	    d > 0 &&
+	    d <= (new Date(y, m, 0)).getDate()
+	);
+    }
+
+    return isDate(theDate, theFormat);
+}
+```
+
 - 判断是否为数字类型	
 ```js
 function isDigit(value) {
@@ -504,6 +725,13 @@ function isDigit(value) {
     }
 }
 ```
+- 判断具体类型	
+```js
+function getType(a) {
+    var typeArray = Object.prototype.toString.call(a).split(" ");
+    return typeArray[1].slice(0, -1);
+}
+```
 - 设置cookie值
 ```js
 function setCookie(name, value, Hours) {
@@ -513,7 +741,7 @@ function setCookie(name, value, Hours) {
     var nd = utc + (3600000 * offset);
     var exp = new Date(nd);
     exp.setTime(exp.getTime() + Hours * 60 * 60 * 1000);
-    document.cookie = name + "=" + escape(value) + ";path=/;expires=" + exp.toGMTString() + ";domain=360doc.com;"
+    document.cookie = name + "=" + escape(value) + ";path=/;expires=" + exp.toGMTString()
 }
 ```
 - 获取cookie值
@@ -599,6 +827,26 @@ function appendscript(src, text, reload, charset) {
         }
         document.getElementsByTagName('head')[0].appendChild(scriptNode);
     } catch(e) {}
+}
+```
+- 动态加载js或css文件
+```js
+function delay_js(url) {
+  var type = url.split(".")
+    , file = type[type.length - 1];
+  if (file == "css") {
+    var obj = document.createElement("link")
+      , lnk = "href"
+      , tp = "text/css";
+    obj.setAttribute("rel", "stylesheet");
+  } else
+    var obj = document.createElement("script")
+      , lnk = "src"
+      , tp = "text/javascript";
+  obj.setAttribute(lnk, url);
+  obj.setAttribute("type", tp);
+  file == "css" ? document.getElementsByTagName("head")[0].appendChild(obj) : document.body.appendChild(obj);
+  return obj;
 }
 ```
 - 返回按ID检索的元素对象
@@ -746,6 +994,23 @@ String.prototype.unique=function(){
     return y
 };
 ```
+- 删除数组中某个元素
+```js
+Array.prototype.remove = function (val) {
+  var index = this.indexOf(val);
+  if (index > -1) {
+    this.splice(index, 1);
+  }
+};
+```
+
+- 判断数组里是否有某个元素
+```js
+ Array.prototype.isContains = function (e) {
+  for (i = 0; i < this.length && this[i] != e; i++);
+  return !(i == this.length);
+}
+```
 - 按字典顺序，对每行进行数组排序
 ```js
 function SetSort(){
@@ -771,7 +1036,7 @@ function transform(tranvalue) {
         var dw = new Array("零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"); //整数部分用
         //以下是小写转换成大写显示在合计大写的文本框中     
         //分离整数与小数
-        var source = splits(tranvalue);
+        var source = tranvalue.split(".");
         var num = source[0];
         var dig = source[1];
         //转换整数部分
@@ -828,13 +1093,28 @@ function transform(tranvalue) {
     }
     return str;
 }
-//拆分整数与小数
-function splits(tranvalue) {
-    var value = new Array('', '');
-    temp = tranvalue.split(".");
-    for (var i = 0; i < temp.length; i++) {
-        value = temp;
-    }
-    return value;
+```
+- 格式化数字
+```js
+function fmoney(s, n) {
+  //s:传入的float数字 ，n:希望返回小数点几位
+  n = n > 0 && n <= 20 ? n : 2;
+  s = parseFloat((s + "").replace(/[^\d\.-]/g, "")).toFixed(n) + "";
+  var l = s
+    .split(".")[0]
+    .split("")
+    .reverse(),
+    r = s.split(".")[1];
+  t = "";
+  for (i = 0; i < l.length; i++) {
+    t += l[i] + ((i + 1) % 3 == 0 && i + 1 != l.length ? "," : "");
+  }
+  return;
+  t
+    .split("")
+    .reverse()
+    .join("") +
+    "." +
+    r;
 }
 ```
